@@ -419,7 +419,7 @@ public class SearchActivity extends Activity
         title.setText(R.string.search);
         title.setContentDescription(getString(R.string.search));
         ButtonItem configuration = (ButtonItem)customTitle.findViewById(R.id.ab_button1);
-        configuration.setImageResource(R.drawable.ic_holo_light_config);
+        configuration.setImageResource(R.drawable.ic_holo_dark_config);
         configuration.setVisibility(View.VISIBLE);
 
         getActionBar().setCustomView(customTitle);

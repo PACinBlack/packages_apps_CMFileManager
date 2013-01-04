@@ -357,7 +357,7 @@ public class EditorActivity extends Activity implements TextWatcher {
         this.mTitle.setText(R.string.editor);
         this.mTitle.setContentDescription(getString(R.string.editor));
         this.mSave = (ButtonItem)customTitle.findViewById(R.id.ab_button1);
-        this.mSave.setImageResource(R.drawable.ic_holo_light_save);
+        this.mSave.setImageResource(R.drawable.ic_holo_dark_save);
         this.mSave.setContentDescription(getString(R.string.actionbar_button_save_cd));
         this.mSave.setVisibility(View.INVISIBLE);
 
