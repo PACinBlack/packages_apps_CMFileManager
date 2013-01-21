@@ -580,10 +580,10 @@ public class NavigationActivity extends Activity
                     }
                 } catch (Throwable ex) {
                     if (!NavigationActivity.this.mChRooted) {
-                        //Show exception and exists
+                        //Show exception and exit
                         Log.e(TAG, getString(R.string.msgs_cant_create_console), ex);
                         // We don't have any console
-                        // Show exception and exists
+                        // Show exception and exit
                         DialogHelper.showToast(
                                 NavigationActivity.this,
                                 R.string.msgs_cant_create_console, Toast.LENGTH_LONG);
@@ -606,36 +606,48 @@ public class NavigationActivity extends Activity
                                 FileManagerSettings.SETTINGS_INITIAL_DIR.getId(),
                                 (String)FileManagerSettings.
                                     SETTINGS_INITIAL_DIR.getDefaultValue());
+
+                    // Check if request navigation to directory (use as default), and
+                    // ensure chrooted and absolute path
+                    String navigateTo = getIntent().getStringExtra(EXTRA_NAVIGATE_TO);
+                    if (navigateTo != null && navigateTo.length() > 0) {
+                        initialDir = navigateTo;
+                    }
+
                     if (NavigationActivity.this.mChRooted) {
                         // Initial directory is the first external sdcard (sdcard, emmc, usb, ...)
                         StorageVolume[] volumes =
                                 StorageHelper.getStorageVolumes(NavigationActivity.this);
                         if (volumes != null && volumes.length > 0) {
                             initialDir = volumes[0].getPath();
+                            //Ensure that initial directory is an absolute directory
+                            initialDir = FileHelper.getAbsPath(initialDir);
+                        } else {
+                            // Show exception and exit
+                            DialogHelper.showToast(
+                                    NavigationActivity.this,
+                                    R.string.msgs_cant_create_console, Toast.LENGTH_LONG);
+                            exit();
+                            return;
+                        }
+                    } else {
+                        //Ensure that initial directory is an absolute directory
+                        initialDir = FileHelper.getAbsPath(initialDir);
+                        File f = new File(initialDir);
+                        if (!f.exists()) {
+                            // Change to root directory
+                            DialogHelper.showToast(
+                                    NavigationActivity.this,
+                                    getString(
+                                            R.string.msgs_settings_invalid_initial_directory,
+                                            initialDir),
+                                    Toast.LENGTH_SHORT);
+                            initialDir = FileHelper.ROOT_DIRECTORY;
                         }
                     }
 
-                    //Ensure initial is an absolute directory
-                    try {
-                        initialDir = new File(initialDir).getAbsolutePath();
-                    } catch (Throwable e) {
-                        Log.e(TAG, "Resolve of initital directory fails", e); //$NON-NLS-1$
-                        String msg =
-                                getString(
-                                        R.string.msgs_settings_invalid_initial_directory,
-                                        initialDir);
-                        DialogHelper.showToast(NavigationActivity.this, msg, Toast.LENGTH_SHORT);
-                        initialDir = FileHelper.ROOT_DIRECTORY;
-                    }
-
-                    // Change the current directory to the preference initial directory or the
-                    // request if exists
-                    String navigateTo = getIntent().getStringExtra(EXTRA_NAVIGATE_TO);
-                    if (navigateTo != null && navigateTo.length() > 0) {
-                        navigationView.changeCurrentDir(navigateTo);
-                    } else {
-                        navigationView.changeCurrentDir(initialDir);
-                    }
+                    // Change the current directory to the preference initial directory
+                    navigationView.changeCurrentDir(initialDir);
                 }
             }
         });
@@ -1420,7 +1432,7 @@ public class NavigationActivity extends Activity
                     public void onClick(DialogInterface alertDialog, int which) {
                         if (which == DialogInterface.BUTTON_NEGATIVE) {
                             // We don't have any console
-                            // Show exception and exists
+                            // Show exception and exit
                             DialogHelper.showToast(
                                     NavigationActivity.this,
                                     R.string.msgs_cant_create_console, Toast.LENGTH_LONG);
