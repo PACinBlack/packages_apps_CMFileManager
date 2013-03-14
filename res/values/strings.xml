@@ -14,7 +14,8 @@
      limitations under the License.
  -->
 
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
   <!-- The name of the application -->
   <string name="app_name">File Manager</string>
@@ -44,6 +45,7 @@
   <string name="no">No</string>
   <string name="all">All</string>
   <string name="overwrite">Overwrite</string>
+  <string name="select">Select</string>
 
   <!-- The root directory name -->
   <string name="root_directory_name"><![CDATA[<Root folder>]]></string>
@@ -362,6 +364,7 @@
   <string name="picker" translatable="false">@string/app_name</string>
   <!-- Picker Activity * Dialog title -->
   <string name="picker_title">Pick a file</string>
+  <string name="directory_picker_title">Pick a directory</string>
 
   <!-- Editor * Editor activity title -->
   <string name="editor">Editor</string>
@@ -632,12 +635,14 @@
   <string name="pref_about">About</string>
   <!-- Preferences * About summary -->
   <string name="pref_about_summary">File Manager v<xliff:g id="version">%1$s</xliff:g>
-    \nCopyright \u00A9 2012 The CyanogenMod Project</string>
+    \nCopyright \u00A9 2013 The CyanogenMod Project</string>
 
   <!-- Preferences * General * Behaviour category -->
   <string name="pref_general_behaviour_category">General</string>
-  <!-- Preferences * General * Case sensitive sort title -->
-  <string name="pref_case_sensitive_sort">Use case-sensitive sorting</string>
+  <!-- Preferences * General * Case sensitive sort and navigating title -->
+  <string name="pref_case_sensitive_sort">Case-sensitive</string>
+  <!-- Preferences * General * Case sensitive sort and navigating summary -->
+  <string name="pref_case_sensitive_sort_summary">Consider case when navigating or sorting search results</string>
   <!-- Preferences * General *Disk usage warning level title -->
   <string name="pref_disk_usage_warning_level">Disk usage warning</string>
   <!-- Preferences * General * Disk usage warning level summary -->
