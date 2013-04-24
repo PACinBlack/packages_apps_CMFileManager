@@ -110,9 +110,9 @@
   <drawable name="checkbox_selected_drawable">@drawable/btn_holo_dark_check_on_normal</drawable>
 
   <!-- Dividers -->
-  <drawable name="horizontal_divider_drawable">@drawable/divider_horizontal_bright_opaque</drawable>
-  <drawable name="vertical_divider_drawable">@drawable/divider_vertical_bright_opaque</drawable>
-  <color name="horizontal_divider_color">@color/divider_color_light</color>
+  <drawable name="horizontal_divider_drawable">@drawable/divider_horizontal_dark_opaque</drawable>
+  <drawable name="vertical_divider_drawable">@drawable/divider_vertical_dark_opaque</drawable>
+  <color name="horizontal_divider_color">@color/divider_color</color>
   <color name="vertical_divider_color">@color/divider_color</color>
 
   <!-- Icons -->
