@@ -118,6 +118,7 @@
   <drawable name="dark_ic_usb_drawable">@drawable/ic_holo_dark_usb</drawable>
   <drawable name="dark_ic_user_defined_bookmark_drawable">@drawable/ic_holo_dark_user_defined_bookmark</drawable>
   <!--<drawable name="dark_ic_history_search_drawable">@null</drawable> -->
+  <drawable name="dark_ic_copy_drawable">@drawable/ic_holo_dark_copy</drawable>
 
   <!-- Disk usage graph -->
   <color name="dark_disk_usage_total_color">#7ecccccc</color>
@@ -167,5 +168,15 @@
   <drawable name="dark_fso_type_system_drawable">@null</drawable>
   <drawable name="dark_fso_type_text_drawable">@null</drawable>
   <drawable name="dark_fso_type_video_drawable">@null</drawable> -->
+
+
+  <!-- Syntax Highlight -->
+  <color name="dark_ash_text_color">#99ffffff</color>
+  <color name="dark_ash_assignment_color">#99ffffff</color>
+  <color name="dark_ash_singleline_comment_color">#ff3f7f5f</color>
+  <color name="dark_ash_multiline_comment_color">#ff7f9fbf</color>
+  <color name="dark_ash_keyword_color">#ffd2568a</color>
+  <color name="dark_ash_quoted_string_color">#ff4Ab3b6</color>
+  <color name="dark_ash_variable_color">#ff91bcf8</color>
 
 </resources>

@@ -23,8 +23,11 @@ import android.util.Log;
 
 import com.cyanogenmod.filemanager.FileManagerApplication;
 import com.cyanogenmod.filemanager.R;
+import com.cyanogenmod.filemanager.commands.SyncResultExecutable;
 import com.cyanogenmod.filemanager.commands.shell.ResolveLinkCommand;
+import com.cyanogenmod.filemanager.console.Console;
 import com.cyanogenmod.filemanager.console.ExecutionException;
+import com.cyanogenmod.filemanager.console.InsufficientPermissionsException;
 import com.cyanogenmod.filemanager.model.AID;
 import com.cyanogenmod.filemanager.model.BlockDevice;
 import com.cyanogenmod.filemanager.model.CharacterDevice;
@@ -32,6 +35,7 @@ import com.cyanogenmod.filemanager.model.Directory;
 import com.cyanogenmod.filemanager.model.DomainSocket;
 import com.cyanogenmod.filemanager.model.FileSystemObject;
 import com.cyanogenmod.filemanager.model.Group;
+import com.cyanogenmod.filemanager.model.Identity;
 import com.cyanogenmod.filemanager.model.NamedPipe;
 import com.cyanogenmod.filemanager.model.ParentDirectory;
 import com.cyanogenmod.filemanager.model.Permissions;
@@ -41,8 +45,10 @@ import com.cyanogenmod.filemanager.model.SystemFile;
 import com.cyanogenmod.filemanager.model.User;
 import com.cyanogenmod.filemanager.preferences.DisplayRestrictions;
 import com.cyanogenmod.filemanager.preferences.FileManagerSettings;
+import com.cyanogenmod.filemanager.preferences.FileTimeFormatMode;
 import com.cyanogenmod.filemanager.preferences.NavigationSortMode;
 import com.cyanogenmod.filemanager.preferences.ObjectIdentifier;
+import com.cyanogenmod.filemanager.preferences.ObjectStringIdentifier;
 import com.cyanogenmod.filemanager.preferences.Preferences;
 import com.cyanogenmod.filemanager.util.MimeTypeHelper.MimeTypeCategory;
 
@@ -52,6 +58,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -103,6 +111,20 @@ public final class FileHelper {
      * @hide
      */
     public static final String NEWLINE = System.getProperty("line.separator"); //$NON-NLS-1$
+
+    // The date/time formats objects
+    /**
+     * @hide
+     */
+    public final static Object DATETIME_SYNC = new Object();
+    /**
+     * @hide
+     */
+    public static boolean sReloadDateTimeFormats = true;
+    private static String sDateTimeFormatOrder = null;
+    private static FileTimeFormatMode sFiletimeFormatMode = null;
+    private static DateFormat sDateFormat = null;
+    private static DateFormat sTimeFormat = null;
 
     /**
      * Constructor of <code>FileHelper</code>.
@@ -181,29 +203,6 @@ public final class FileHelper {
         }
         return String.format(
                 format, Long.valueOf(aux), res.getString(magnitude[magnitude.length - 1]));
-    }
-
-    /**
-     * Method that returns if an file system object requires elevated privileges.
-     * This occurs when the user is "root" or when the user console doesn't have
-     * sufficient permissions over the file system object.
-     *
-     * @param fso File system object
-     * @return boolean If the file system object requires elevated privileges
-     */
-    public static boolean isPrivileged(FileSystemObject fso) {
-        //Parent directory doesn't require privileges
-        if (fso instanceof ParentDirectory) {
-            return false;
-        }
-
-        //Checks if user is the administrator user
-        if (fso.getUser().getName().compareTo(USER_ROOT) == 0) {
-            return true;
-        }
-
-        //No privileged
-        return false;
     }
 
     /**
@@ -868,7 +867,13 @@ public final class FileHelper {
         final String[] VALID =
                 {
                     "tar", "tgz", "tar.gz", "tar.bz2", "tar.lzma",
-                    "zip", "gz", "bz2", "lzma", "xz", "Z"
+                    "zip", "gz", "bz2", "lzma", "xz", "Z", "rar"
+                };
+        // Null values for required commands
+        final String[] OPT_KEYS =
+                {
+                    null, null, null, null, null,
+                    "unzip", null, null, "unlzma", "unxz", "uncompress", "unrar"
                 };
 
         // Check that have a valid file
@@ -883,7 +888,12 @@ public final class FileHelper {
             int cc = VALID.length;
             for (int i = 0; i < cc; i++) {
                 if (VALID[i].compareToIgnoreCase(ext) == 0) {
-                    return true;
+                    // Is the command present
+                    if (OPT_KEYS[i] != null &&
+                        FileManagerApplication.hasOptionalCommand(OPT_KEYS[i])) {
+                        return true;
+                    }
+                    return false;
                 }
             }
         }
@@ -1103,5 +1113,213 @@ public final class FileHelper {
             file = new File(fso.getFullPath()).getAbsoluteFile();
         }
         return new File(file, ".nomedia").getAbsoluteFile(); //$NON-NLS-1$
+    }
+
+    /**
+     * Method that ensures that the actual console has access to read the
+     * {@link FileSystemObject} passed.
+     *
+     * @param console The console
+     * @param fso The {@link FileSystemObject} to check
+     * @param executable The executable to associate to the {@link InsufficientPermissionsException}
+     * @throws InsufficientPermissionsException If the console doesn't have enough rights
+     */
+    public static void ensureReadAccess(
+            Console console, FileSystemObject fso, SyncResultExecutable executable)
+            throws InsufficientPermissionsException {
+        try {
+            if (console.isPrivileged()) {
+                // Should have access
+                return;
+            }
+            Identity identity = console.getIdentity();
+            if (identity == null) {
+                throw new InsufficientPermissionsException(executable);
+            }
+            Permissions permissions = fso.getPermissions();
+            User user = fso.getUser();
+            Group group = fso.getGroup();
+            List<Group> groups = identity.getGroups();
+            if ( permissions == null || user == null || group == null) {
+                throw new InsufficientPermissionsException(executable);
+            }
+            // Check others
+            if (permissions.getOthers().isRead()) {
+                return;
+            }
+            // Check user
+            if (user.getId() == identity.getUser().getId() && permissions.getUser().isRead()) {
+                return;
+            }
+            // Check group
+            if (group.getId() == identity.getGroup().getId() && permissions.getGroup().isRead()) {
+                return;
+            }
+            // Check groups
+            int cc = groups.size();
+            for (int i = 0; i < cc; i++) {
+                Group g = groups.get(i);
+                if (group.getId() == g.getId() && permissions.getGroup().isRead()) {
+                    return;
+                }
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to check fso read permission,", e); //$NON-NLS-1$
+        }
+        throw new InsufficientPermissionsException(executable);
+    }
+
+    /**
+     * Method that ensures that the actual console has access to write the
+     * {@link FileSystemObject} passed.
+     *
+     * @param console The console
+     * @param fso The {@link FileSystemObject} to check
+     * @param executable The executable to associate to the {@link InsufficientPermissionsException}
+     * @throws InsufficientPermissionsException If the console doesn't have enough rights
+     */
+    public static void ensureWriteAccess(
+            Console console, FileSystemObject fso, SyncResultExecutable executable)
+            throws InsufficientPermissionsException {
+        try {
+            if (console.isPrivileged()) {
+                // Should have access
+                return;
+            }
+            Identity identity = console.getIdentity();
+            if (identity == null) {
+                throw new InsufficientPermissionsException(executable);
+            }
+            Permissions permissions = fso.getPermissions();
+            User user = fso.getUser();
+            Group group = fso.getGroup();
+            List<Group> groups = identity.getGroups();
+            if ( permissions == null || user == null || group == null) {
+                throw new InsufficientPermissionsException(executable);
+            }
+            // Check others
+            if (permissions.getOthers().isWrite()) {
+                return;
+            }
+            // Check user
+            if (user.getId() == identity.getUser().getId() && permissions.getUser().isWrite()) {
+                return;
+            }
+            // Check group
+            if (group.getId() == identity.getGroup().getId() && permissions.getGroup().isWrite()) {
+                return;
+            }
+            // Check groups
+            int cc = groups.size();
+            for (int i = 0; i < cc; i++) {
+                Group g = groups.get(i);
+                if (group.getId() == g.getId() && permissions.getGroup().isWrite()) {
+                    return;
+                }
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to check fso write permission,", e); //$NON-NLS-1$
+        }
+        throw new InsufficientPermissionsException(executable);
+    }
+
+    /**
+     * Method that ensures that the actual console has access to execute the
+     * {@link FileSystemObject} passed.
+     *
+     * @param console The console
+     * @param fso The {@link FileSystemObject} to check
+     * @param executable The executable to associate to the {@link InsufficientPermissionsException}
+     * @throws InsufficientPermissionsException If the console doesn't have enough rights
+     */
+    public static void ensureExecuteAccess(
+            Console console, FileSystemObject fso, SyncResultExecutable executable)
+            throws InsufficientPermissionsException {
+        try {
+            if (console.isPrivileged()) {
+                // Should have access
+                return;
+            }
+            Identity identity = console.getIdentity();
+            if (identity == null) {
+                throw new InsufficientPermissionsException(executable);
+            }
+            Permissions permissions = fso.getPermissions();
+            User user = fso.getUser();
+            Group group = fso.getGroup();
+            List<Group> groups = identity.getGroups();
+            if ( permissions == null || user == null || group == null) {
+                throw new InsufficientPermissionsException(executable);
+            }
+            // Check others
+            if (permissions.getOthers().isExecute()) {
+                return;
+            }
+            // Check user
+            if (user.getId() == identity.getUser().getId() && permissions.getUser().isExecute()) {
+                return;
+            }
+            // Check group
+            if (group.getId() == identity.getGroup().getId() && permissions.getGroup().isExecute()) {
+                return;
+            }
+            // Check groups
+            int cc = groups.size();
+            for (int i = 0; i < cc; i++) {
+                Group g = groups.get(i);
+                if (group.getId() == g.getId() && permissions.getGroup().isExecute()) {
+                    return;
+                }
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to check fso execute permission,", e); //$NON-NLS-1$
+        }
+        throw new InsufficientPermissionsException(executable);
+    }
+
+    /**
+     * Method that formats a filetime date with the specific system settings
+     *
+     * @param ctx The current context
+     * @param filetime The filetime date
+     * @return String The filetime date formatted
+     */
+    public static String formatFileTime(Context ctx, Date filetime) {
+        synchronized (DATETIME_SYNC) {
+            if (sReloadDateTimeFormats) {
+                String defaultValue =
+                        ((ObjectStringIdentifier)FileManagerSettings.
+                                    SETTINGS_FILETIME_FORMAT_MODE.getDefaultValue()).getId();
+                String id = FileManagerSettings.SETTINGS_FILETIME_FORMAT_MODE.getId();
+                sFiletimeFormatMode =
+                        FileTimeFormatMode.fromId(
+                                Preferences.getSharedPreferences().getString(id, defaultValue));
+                if (sFiletimeFormatMode.compareTo(FileTimeFormatMode.SYSTEM) == 0) {
+                    sDateTimeFormatOrder = ctx.getString(R.string.datetime_format_order);
+                    sDateFormat = android.text.format.DateFormat.getDateFormat(ctx);
+                    sTimeFormat = android.text.format.DateFormat.getTimeFormat(ctx);
+                } else if (sFiletimeFormatMode.compareTo(FileTimeFormatMode.LOCALE) == 0) {
+                    sDateFormat =
+                            DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
+                } else {
+                    sDateFormat = new SimpleDateFormat(sFiletimeFormatMode.getFormat());
+                }
+                sReloadDateTimeFormats = false;
+            }
+        }
+
+        // Apply the user settings
+        String formatted = "-"; //$NON-NLS-1$
+        if (sFiletimeFormatMode.compareTo(FileTimeFormatMode.SYSTEM) == 0) {
+            String date = sDateFormat.format(filetime);
+            String time = sTimeFormat.format(filetime);
+            formatted = String.format(sDateTimeFormatOrder, date, time);
+        } else {
+            formatted = sDateFormat.format(filetime);
+        }
+        return formatted;
     }
 }

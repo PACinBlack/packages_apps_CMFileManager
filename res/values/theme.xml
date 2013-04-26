@@ -110,9 +110,9 @@
   <drawable name="checkbox_selected_drawable">@drawable/btn_holo_dark_check_on_normal</drawable>
 
   <!-- Dividers -->
-  <drawable name="horizontal_divider_drawable">@drawable/divider_horizontal_bright_opaque</drawable>
-  <drawable name="vertical_divider_drawable">@drawable/divider_vertical_bright_opaque</drawable>
-  <color name="horizontal_divider_color">@color/divider_color_light</color>
+  <drawable name="horizontal_divider_drawable">@drawable/divider_horizontal_dark_opaque</drawable>
+  <drawable name="vertical_divider_drawable">@drawable/divider_vertical_dark_opaque</drawable>
+  <color name="horizontal_divider_color">@color/divider_color</color>
   <color name="vertical_divider_color">@color/divider_color</color>
 
   <!-- Icons -->
@@ -124,6 +124,7 @@
   <drawable name="ic_usb_drawable">@drawable/ic_holo_dark_usb</drawable>
   <drawable name="ic_user_defined_bookmark_drawable">@drawable/ic_holo_dark_user_defined_bookmark</drawable>
   <drawable name="ic_history_search_drawable">@drawable/ic_holo_dark_history_search</drawable>
+  <drawable name="ic_copy_drawable">@drawable/ic_holo_dark_copy</drawable>
 
   <!-- Disk usage graph -->
   <color name="disk_usage_total_color">@color/disk_usage_total</color>
@@ -173,5 +174,15 @@
   <drawable name="fso_type_system_drawable">@drawable/fso_type_system</drawable>
   <drawable name="fso_type_text_drawable">@drawable/fso_type_text</drawable>
   <drawable name="fso_type_video_drawable">@drawable/fso_type_video</drawable>
+
+
+  <!-- Syntax Highlight -->
+  <color name="ash_text_color">@color/black_transparent</color>
+  <color name="ash_assignment_color">@color/black_transparent</color>
+  <color name="ash_singleline_comment_color">#ff278556</color>
+  <color name="ash_multiline_comment_color">#ff7f9fbf</color>
+  <color name="ash_keyword_color">#ff773b63</color>
+  <color name="ash_quoted_string_color">#990000C0</color>
+  <color name="ash_variable_color">#ff5080bd</color>
 
 </resources>
